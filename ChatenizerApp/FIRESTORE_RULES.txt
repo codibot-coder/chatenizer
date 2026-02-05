@@ -1,0 +1,25 @@
+// Reglas de seguridad de Firestore para Chatenizer
+
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Colección de usuarios
+    match /users/{userId} {
+      allow read, write: if request.auth != null && request.auth.uid == userId;
+    }
+    
+    // Colección de chats
+    match /chats/{chatId} {
+      allow read, write: if request.auth != null
+        && (resource.data.participants[request.auth.uid] != null
+        || request.auth.uid in resource.data.participants);
+    }
+    
+    // Colección de mensajes
+    match /chats/{chatId}/messages/{messageId} {
+      allow read, write: if request.auth != null
+        && (get(/databases/$(database)/documents/chats/$(chatId)).data.participants[request.auth.uid] != null
+        || request.auth.uid in get(/databases/$(database)/documents/chats/$(chatId)).data.participants);
+    }
+  }
+}
